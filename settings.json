@@ -1,0 +1,27 @@
+{
+    "_comment": "settings.json zum Einstellen der Simulations-Parameter",
+
+
+    "fiat": {
+        "soc": 20,
+        "step_range": []
+    },
+
+
+    "_comment": "Parameter Simulation global",
+    "simulation_param": {
+        "simulation_period": 1,
+        "step_len": "Min",
+        "global_rand": 1
+    },
+
+    "_comment": "Kundenspezifische Parameter",
+    "parking_duration": [10,60],
+
+
+    "_comment": "Parameter Parkplatz",
+    "number_of_stations": 4,
+    "max_power_per_station:": 50,
+    "opening_times": [8,22]
+
+}
