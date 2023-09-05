@@ -47,9 +47,11 @@ class Car:
 
 
 def rand_new_car(weight):
-    sample_list = [0, 1]
-    random_choice = random.choices(sample_list, weights=(100, weight), k=1)
-    return random_choice
+    random_choice = random.choices([0, 1], weights=(100, weight), k=1)
+    if random_choice[0]:
+        return 1
+    else:
+        return 0
 
 
 class Parking:
@@ -78,9 +80,6 @@ class Parking:
 # Example usage
 def main():
     # Initialize models
-    # df = pd.read_csv("cars/VW ID.3 Pure 45kWh Ladekurve.csv", sep=';', decimal=',')
-    # charging_curve = df
-
     model1 = Model("VW_ID3_Pure", 100)
     model2 = Model("Tesla_Model_3_LR", 120)
     model3 = Model("FIAT_500e_Hatchback_2021", 110)
@@ -92,17 +91,21 @@ def main():
     df_results = pd.DataFrame()  # Dataframe mit timecode und den Ergebnissen
     df_results.index = pd.date_range(start='20.02.2023 00:00:00', end='21.02.2023 00:00:00', freq='Min')
 
-    # df_results['power_per_minute'] = 0
+    if 'power_per_minute' not in df_results.columns:
+        df_results['power_per_minute'] = 0
+
+    if 'number_cars_charging' not in df_results.columns:
+        df_results['number_cars_charging'] = 0
 
     # Simulate charging process
     # for minute in range(1, 61):
     #   print(f"Minute: {minute}")
     for row_index in df_results.iterrows():
         # Generate random number of new cars
-        num_new_cars = random.randint(0, 1)
-        # num_new_cars = int(rand_new_car(5))
+        # num_new_cars = random.randint(0, 1)
+        num_new_cars = rand_new_car(5)
         for _ in range(num_new_cars):
-            car_model = random.choice([model1, model2])
+            car_model = random.choice([model1, model2, model3])
             car_model = model1  # Testweise nur model1 (VW ID3) laden
             total_parking_duration = random.randint(*settings["parking_duration"])
             new_car = Car(car_model, total_parking_duration)
@@ -112,13 +115,25 @@ def main():
         for car in parking.charging_cars:
             power, ready = car.charge()
             # df_results['power_per_minute'] = df_results['power_per_minute'] + power
-            df_results['power_per_minute'] = power
+            # df_results['power_per_minute'] = power
+            df_results.loc[row_index[0], 'power_per_minute'] += power
 
             car.current_parking_duration += 1
             if ready:
                 parking.remove_ready_cars()
 
-        # df_results['power_summed'] = df_results['power_per_minute'].consum()
+            df_results.loc[row_index[0], 'number_cars_charging'] = parking.charging_cars.__len__()
+
+            # df_results['power_summed'] = df_results['power_per_minute'].consum()
+    # plot df_results
+
+    """fig, ax1 = plt.subplots()
+    color = 'tab:blue'
+    ax1.set_xlabel('power in kW')
+    ax1.set_ylabel('datetime', color=color)
+    ax1.plot(df_results[row_index[0]], color=color)
+    ax1.tick_params(axis='y', labelcolor=color)"""
+
     df_results.plot()
     plt.show()
 
