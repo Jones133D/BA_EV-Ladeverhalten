@@ -1,9 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.dates import DateFormatter
 import pandas as pd
 import json
 from os import listdir
 import random
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 with open("settings.json") as f:
     settings = json.load(f)
@@ -106,7 +110,7 @@ def main():
         num_new_cars = rand_new_car(5)
         for _ in range(num_new_cars):
             car_model = random.choice([model1, model2, model3])
-            car_model = model1  # Testweise nur model1 (VW ID3) laden
+            car_model = model1  # zum test nur model1 (VW ID3) laden
             total_parking_duration = random.randint(*settings["parking_duration"])
             new_car = Car(car_model, total_parking_duration)
             parking.add_car(new_car)
@@ -127,14 +131,27 @@ def main():
             # df_results['power_summed'] = df_results['power_per_minute'].consum()
     # plot df_results
 
-    """fig, ax1 = plt.subplots()
+    # Create figure with secondary y-axis
+    fig, ax1 = plt.subplots()
     color = 'tab:blue'
-    ax1.set_xlabel('power in kW')
-    ax1.set_ylabel('datetime', color=color)
-    ax1.plot(df_results[row_index[0]], color=color)
-    ax1.tick_params(axis='y', labelcolor=color)"""
+    ax1.set_xlabel('datetime')
+    ax1.set_ylabel('power in kW', color=color)
+    ax1.plot(np.asarray(df_results.index), np.asarray(df_results['power_per_minute']), c=color, alpha=0.6)
+    ax1.tick_params(axis='y', labelcolor=color)
 
-    df_results.plot()
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'tab:orange'
+    ax2.set_ylabel('number of cars', color=color)  # we already handled the x-label with ax1
+    ax2.plot(np.asarray(df_results.index), np.asarray(df_results['number_cars_charging']), c=color, alpha=0.6)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    # fig.autofmt_xdate()
+    date_form = DateFormatter("%H:%M")
+    ax1.xaxis.set_major_formatter(date_form)
+
+    # df_results.plot()
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.show()
 
 
