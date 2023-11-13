@@ -6,15 +6,13 @@ import pandas as pd
 import json
 # from os import listdir
 import random
+
 # import plotly.express as px
 # import plotly.graph_objects as go
 # from plotly.subplots import make_subplots
 
 # globals
 num_rejected_cars = 0  # Anzahl abgewiesener EVs, wenn alle Ladesäulen belegt
-
-with open("settings.json", "r") as f:
-    settings = json.load(f)
 
 
 class Model:
@@ -54,7 +52,7 @@ class Car:
         return power, ready
 
 
-def rand_new_car(weight):  # kommt in dieser Minute ein neues Auto dazu
+def rand_new_car(weight):
     random_choice = random.choices([0, 1], weights=(200, weight), k=1)
     if random_choice[0]:
         return 1
@@ -88,12 +86,26 @@ class Parking:
 
 
 # Example usage
-def main():
+def simulation(settings_selection):
+    global num_rejected_cars
+    num_rejected_cars = 0
+
+    with open(settings_selection, "r") as f:
+        settings = json.load(f)
+
     # Initialize models
-    model1 = Model("VW_ID3_Pure", 100)
-    model2 = Model("Tesla_Model_3_LR", 120)
-    model3 = Model("FIAT_500e_Hatchback_2021", 110)
+    model1 = Model("VW_ID3_Pure", 58)
+    model2 = Model("Tesla_Model_3_LR", 82.5)
+    model3 = Model("FIAT_500e_Hatchback_2021", 42)
     model4 = Model("dummy_100kW", 100)
+    model5 = Model("Tesla_Model_S-X_LR", 100)
+    model6 = Model("Porsche_Taycan", 93.4)
+    model_list_all = [model1, model2, model3, model4, model5, model6]  # Liste aller möglicher Modelle
+    model_list = []  # Liste mit Modellen aus Settings.json
+    for name in (settings["list_of_cars"]):
+        for objekt in model_list_all:
+            if name == objekt.name:
+                model_list.append(objekt)
 
     # Initialize parking
     parking = Parking(int(settings["number_of_stations"]), int(settings["max_power_per_station"]))
@@ -117,9 +129,9 @@ def main():
 
         num_new_cars = rand_new_car(10)
         for _ in range(num_new_cars):
-            car_model = random.choice([model1, model2, model3])
-            # car_model = random.choice([(settings["list_of_cars"])])
-            #  = model4  # zum test nur bestimmtes Model laden
+            car_model = random.choice(model_list)
+            # car_model = random.choice([model1, model2, model3])
+            # car_model = model4  # zum test nur bestimmtes Model laden
             total_parking_duration = random.randint(*settings["parking_duration"])  # Parkdauer aus Settings
             new_car = Car(car_model, total_parking_duration)
             parking.add_car(new_car)
@@ -170,6 +182,46 @@ def main():
     # df_results.plot()
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.show()
+
+    return df_results
+
+
+def plot(df):
+    # Create figure with secondary y-axis
+    fig1, ax1 = plt.subplots()
+    fig1.set_size_inches(18.5, 10.5)
+    color = 'tab:blue'
+    ax1.set_xlabel('datetime')
+    ax1.set_ylabel('power in kW', color=color)
+    ax1.plot(np.asarray(df.index), np.asarray(df['power_per_minute']), c=color, alpha=0.6)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'tab:orange'
+    ax2.set_ylabel('number of cars', color=color)  # we already handled the x-label with ax1
+    ax2.plot(np.asarray(df.index), np.asarray(df['number_cars_charging']), c=color, alpha=0.6)
+    ax2.tick_params(axis='y', labelcolor=color)
+    # ax2.set_ylim(0, settings["number_of_stations"])
+
+    ax = plt.gca()
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+
+    plt.xticks(rotation=45)
+
+    # fig.autofmt_xdate()
+    # date_form = mdates.DateFormatter("%H:%M")
+    # ax1.xaxis.set_major_formatter(date_form)
+
+    # df_results.plot()
+    fig1.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.show()
+
+
+def main():
+    df_results_returned = simulation("settings_model_validation.json")
+    plot(df_results_returned)
 
 
 if __name__ == "__main__":

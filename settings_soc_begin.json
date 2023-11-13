@@ -1,0 +1,35 @@
+{
+    "_comment": "settings.json zum Einstellen der Simulations-Parameter",
+
+
+
+    "_comment": "Parameter Simulation global",
+    "simulation_param": {
+        "simulation_period": 1,
+        "step_len": "Min",
+        "global_rand": 1
+    },
+
+    "_comment": "Kundenspezifische Parameter",
+    "parking_duration_UNUSED": [100,100],
+    "list_of_cars": ["VW_ID3_Pure", "Tesla_Model_3_LR", "FIAT_500e_Hatchback_2021", "Tesla_Model_S-X_LR", "Porsche_Taycan"],
+    "soc_begin": "gauss",
+    "_soc_begin": "equally_distributed",
+    "soc_begin_normal_distributed_between": [0,75],
+    "soc_gauss_von":  0,
+    "soc_gauss_bis": 75,
+    "soc_gauss_sigma": 10,
+
+
+    "_comment": "Parameter Parkplatz",
+    "number_of_stations": 4,
+    "max_power_per_station": 50,
+    "accessible_all_day": true,
+    "opening_times": [8,22],
+
+    "_comment": "Parameter Charging-Time Weibull",
+    "a_out": 39.857766124920076,
+    "kappa_out": 0.65117444343909,
+    "loc_out": -20.724236876543387,
+    "lambda_out": 8.472003942187907
+}

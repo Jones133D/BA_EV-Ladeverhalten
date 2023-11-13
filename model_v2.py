@@ -6,15 +6,13 @@ import pandas as pd
 import json
 # from os import listdir
 import random
-# import plotly.express as px
-# import plotly.graph_objects as go
-# from plotly.subplots import make_subplots
+from scipy import stats
 
 # globals
 num_rejected_cars = 0  # Anzahl abgewiesener EVs, wenn alle Ladesäulen belegt
-
-with open("settings.json", "r") as f:
-    settings = json.load(f)
+total_number_cars = 0  # Anzahl ankommender EVs pro Tag
+num_loaded_cars = 0  # Anzahl EVs mit Ladevorgang
+settings = []
 
 
 class Model:
@@ -26,13 +24,14 @@ class Model:
 
 
 class Car:
-    def __init__(self, model, total_parking_duration):
+    def __init__(self, model, total_parking_duration, soc_begin):
         self.is_EV = True
         self.model = model
         self.total_parking_duration = total_parking_duration
-        self.soc = 0
         self.consumed_energy = 0
         self.current_parking_duration = 0
+        self.soc = soc_begin_generate(soc_begin)
+
 
     def charge(self):
         # print(self.model.charging_curve.info())
@@ -54,12 +53,24 @@ class Car:
         return power, ready
 
 
-def rand_new_car(weight):  # kommt in dieser Minute ein neues Auto dazu
+def rand_new_car(weight):
     random_choice = random.choices([0, 1], weights=(200, weight), k=1)
     if random_choice[0]:
         return 1
     else:
         return 0
+
+
+def soc_begin_generate(soc_begin):
+    soc = 0
+    # soc_begin = "gauss"
+    if soc_begin == "equally_distributed":
+        soc = random.randint(*settings["soc_begin_normal_distributed_between"])
+    elif soc_begin == "gauss":
+        soc = np.random.normal(((settings["soc_gauss_bis"]-settings["soc_gauss_von"])/2), settings["soc_gauss_sigma"], 1)
+        soc = np.clip(soc, 0, 75)
+    print("soc_begin: ", soc_begin, ",", soc)
+    return soc
 
 
 class Parking:
@@ -71,6 +82,9 @@ class Parking:
 
     def add_car(self, car):
         global num_rejected_cars
+        global total_number_cars
+        total_number_cars += 1
+
         if len(self.charging_cars) < self.number_of_stations:
             self.charging_cars.append(car)
         else:
@@ -78,26 +92,42 @@ class Parking:
             print("Alle Ladesäulen belegt. Abgewiesene EVs: ", num_rejected_cars)
 
     def remove_ready_cars(self):
+        global num_loaded_cars
         ready_cars = []
         for car in self.charging_cars:
             if car.current_parking_duration >= car.total_parking_duration:
                 ready_cars.append(car)
         for car in ready_cars:
+            num_loaded_cars += 1
             self.charging_cars.remove(car)
-            print(f"Car with model '{car.model.name}' is fully charged and leaving the parking.")
+            print(f"'{car.model.name}' charged. Anzahl geladener EVs: {num_loaded_cars}")
 
 
 # Example usage
-def main():
+def simulation(settings_selection):
+    global num_rejected_cars
+    global settings
+    num_rejected_cars = 0
+
+    with open(settings_selection, "r") as f:
+        settings = json.load(f)
+
     # Initialize models
-    model1 = Model("VW_ID3_Pure", 100)
-    model2 = Model("Tesla_Model_3_LR", 120)
-    model3 = Model("FIAT_500e_Hatchback_2021", 110)
+    model1 = Model("VW_ID3_Pure", 58)
+    model2 = Model("Tesla_Model_3_LR", 82.5)
+    model3 = Model("FIAT_500e_Hatchback_2021", 42)
     model4 = Model("dummy_100kW", 100)
+    model5 = Model("Tesla_Model_S-X_LR", 100)
+    model6 = Model("Porsche_Taycan", 93.4)
+    model_list_all = [model1, model2, model3, model4, model5, model6]  # Liste aller möglicher Modelle
+    model_list = []  # Liste mit Modellen aus Settings.json
+    for name in (settings["list_of_cars"]):
+        for objekt in model_list_all:
+            if name == objekt.name:
+                model_list.append(objekt)
 
     # Initialize parking
     parking = Parking(int(settings["number_of_stations"]), int(settings["max_power_per_station"]))
-    # parking = Parking(4, 50)
 
     df_results = pd.DataFrame()  # Dataframe mit timecode und den Ergebnissen
     df_results.index = pd.date_range(start='20.02.2023 00:00:00', end='21.02.2023 00:00:00', freq='Min')
@@ -109,19 +139,16 @@ def main():
         df_results['number_cars_charging'] = 0
 
     # Simulate charging process
-    # for minute in range(1, 61):
-    #   print(f"Minute: {minute}")
     for row_index in df_results.iterrows():
         # Generate random number of new cars
-        # num_new_cars = random.randint(0, 1)
-
         num_new_cars = rand_new_car(10)
         for _ in range(num_new_cars):
-            car_model = random.choice([model1, model2, model3])
-            # car_model = random.choice([(settings["list_of_cars"])])
-            #  = model4  # zum test nur bestimmtes Model laden
-            total_parking_duration = random.randint(*settings["parking_duration"])  # Parkdauer aus Settings
-            new_car = Car(car_model, total_parking_duration)
+            car_model = random.choice(model_list)
+            # car_model = model4  # zum test nur bestimmtes Model laden
+            # total_parking_duration = random.randint(*settings["parking_duration"])  # Parkdauer aus Settings
+            total_parking_duration = stats.exponweib.rvs(settings["a_out"], settings["kappa_out"], \
+                                                         loc=settings["loc_out"], scale=settings["lambda_out"], size=1)
+            new_car = Car(car_model, total_parking_duration, settings["soc_begin"])
             parking.add_car(new_car)
 
         # Charge cars and remove ready cars
@@ -138,22 +165,24 @@ def main():
             df_results.loc[row_index[0], 'number_cars_charging'] = parking.charging_cars.__len__()
 
             # df_results['power_summed'] = df_results['power_per_minute'].consum()
-    # plot df_results
+    return df_results
 
+
+def plot(df):
     # Create figure with secondary y-axis
-    fig, ax1 = plt.subplots()
-    fig.set_size_inches(18.5, 10.5)
+    fig1, ax1 = plt.subplots()
+    fig1.set_size_inches(18.5, 10.5)
     color = 'tab:blue'
     ax1.set_xlabel('datetime')
     ax1.set_ylabel('power in kW', color=color)
-    ax1.plot(np.asarray(df_results.index), np.asarray(df_results['power_per_minute']), c=color, alpha=0.6)
+    ax1.plot(np.asarray(df.index), np.asarray(df['power_per_minute']), c=color, alpha=0.6)
     ax1.tick_params(axis='y', labelcolor=color)
 
     ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
     color = 'tab:orange'
     ax2.set_ylabel('number of cars', color=color)  # we already handled the x-label with ax1
-    ax2.plot(np.asarray(df_results.index), np.asarray(df_results['number_cars_charging']), c=color, alpha=0.6)
+    ax2.plot(np.asarray(df.index), np.asarray(df['number_cars_charging']), c=color, alpha=0.6)
     ax2.tick_params(axis='y', labelcolor=color)
     # ax2.set_ylim(0, settings["number_of_stations"])
 
@@ -168,8 +197,28 @@ def main():
     # ax1.xaxis.set_major_formatter(date_form)
 
     # df_results.plot()
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    fig1.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.title(label='Lastverlauf')
     plt.show()
+
+    # Histogramm Lastverteilung
+    plt.hist(np.asarray(df['power_per_minute']), bins=40)
+    # plt.hist(np.asarray(df['number_cars_charging']), bins=[0, 1, 2, 3, 4])
+    plt.ylabel('Minuten')
+    plt.xlabel('Load in kW')
+    plt.title(label='Histogramm Load')
+    plt.show()
+
+    # CFD Plot
+    """plt.hist(np.asarray(df['power_per_minute']), cumulative=True, label='CDF',
+             histtype='step', alpha=0.8, color='k')
+    plt.show()"""
+
+
+def main():
+    # df_results_returned = simulation("settings_model_charging-time.json")
+    df_results_returned = simulation("settings_soc_begin.json")
+    plot(df_results_returned)
 
 
 if __name__ == "__main__":

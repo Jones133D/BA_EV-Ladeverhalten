@@ -2,11 +2,6 @@
     "_comment": "settings.json zum Einstellen der Simulations-Parameter",
 
 
-    "fiat": {
-        "soc": 20,
-        "step_range": []
-    },
-
 
     "_comment": "Parameter Simulation global",
     "simulation_param": {
@@ -17,7 +12,7 @@
 
     "_comment": "Kundenspezifische Parameter",
     "parking_duration": [100,100],
-    "list_of_cars": "model1, model2, model3",
+    "list_of_cars": ["dummy_100kW"],
 
 
     "_comment": "Parameter Parkplatz",
