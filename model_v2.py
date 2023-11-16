@@ -32,7 +32,6 @@ class Car:
         self.current_parking_duration = 0
         self.soc = soc_begin_generate(soc_begin)
 
-
     def charge(self):
         # print(self.model.charging_curve.info())
         idx = self.soc / 0.25
@@ -53,22 +52,27 @@ class Car:
         return power, ready
 
 
-def rand_new_car(weight):
-    random_choice = random.choices([0, 1], weights=(200, weight), k=1)
-    if random_choice[0]:
-        return 1
-    else:
-        return 0
-
+def rand_new_car():
+    if settings["arriving_process"] == "random":
+        random_choice = random.choices([0, 1], weights=(200, settings["arriving_process_rand_factor"]), k=1)
+        if random_choice[0]:
+            return 1
+        else:
+            return 0
+    elif settings["arriving_process"] == "poisson":
+        # random_choice = np.random.exponential(scale=1 / (settings["arriving_process_poisson_lambda"] / 60))
+        random_choice = np.random.poisson((settings["arriving_process_poisson_lambda"] / 60))
+        return random_choice
 
 def soc_begin_generate(soc_begin):
-    soc = 0
-    # soc_begin = "gauss"
     if soc_begin == "equally_distributed":
         soc = random.randint(*settings["soc_begin_normal_distributed_between"])
     elif soc_begin == "gauss":
-        soc = np.random.normal(((settings["soc_gauss_bis"]-settings["soc_gauss_von"])/2), settings["soc_gauss_sigma"], 1)
+        soc = np.random.normal(((settings["soc_gauss_bis"] - settings["soc_gauss_von"]) / 2),
+                               settings["soc_gauss_sigma"], 1)
         soc = np.clip(soc, 0, 75)
+    else:
+        soc = 0
     print("soc_begin: ", soc_begin, ",", soc)
     return soc
 
@@ -141,7 +145,7 @@ def simulation(settings_selection):
     # Simulate charging process
     for row_index in df_results.iterrows():
         # Generate random number of new cars
-        num_new_cars = rand_new_car(10)
+        num_new_cars = rand_new_car()
         for _ in range(num_new_cars):
             car_model = random.choice(model_list)
             # car_model = model4  # zum test nur bestimmtes Model laden
@@ -213,6 +217,32 @@ def plot(df):
     """plt.hist(np.asarray(df['power_per_minute']), cumulative=True, label='CDF',
              histtype='step', alpha=0.8, color='k')
     plt.show()"""
+
+
+def auswertung(df):
+    max_values = df.power_per_minute.max()
+    print("Maximale Last: ", max_values, "kWh")
+    abs_over_60 = (df.power_per_minute > 0.6 * max_values).sum()
+    percent_over_60 = (abs_over_60 / len(df.power_per_minute)) * 100
+    abs_over_70 = (df.power_per_minute > 0.7 * max_values).sum()
+    percent_over_70 = (abs_over_70 / len(df.power_per_minute)) * 100
+    abs_over_80 = (df.power_per_minute > 0.8 * max_values).sum()
+    percent_over_80 = (abs_over_80 / len(df.power_per_minute)) * 100
+    abs_over_90 = (df.power_per_minute > 0.9 * max_values).sum()
+    percent_over_90 = (abs_over_90 / len(df.power_per_minute)) * 100
+    abs_over_95 = (df.power_per_minute > 0.95 * max_values).sum()
+    percent_over_95 = (abs_over_95 / len(df.power_per_minute)) * 100
+    print("Minuten über 60%% der maximalen Last (%5.2f" % (0.60 * max_values), "kWh):", abs_over_60, "Entsprechen",
+          "%5.2f" % percent_over_60, "%")
+    print("Minuten über 70%% der maximalen Last (%5.2f" % (0.70 * max_values), "kWh):", abs_over_70, "Entsprechen",
+          "%5.2f" % percent_over_70, "%")
+    print("Minuten über 80%% der maximalen Last (%5.2f" % (0.80 * max_values), "kWh):", abs_over_80, "Entsprechen",
+          "%5.2f" % percent_over_80, "%")
+    print("Minuten über 90%% der maximalen Last (%5.2f" % (0.90 * max_values), "kWh):", abs_over_90, "Entsprechen",
+          "%5.2f" % percent_over_90, "%")
+    print("Minuten über 95%% der maximalen Last (%5.2f" % (0.95 * max_values), "kWh):", abs_over_95, "Entsprechen",
+          "%5.2f" % percent_over_95, "%")
+    return
 
 
 def main():
