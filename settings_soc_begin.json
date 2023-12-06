@@ -12,7 +12,9 @@
 
     "_comment": "Kundenspezifische Parameter",
     "parking_duration_UNUSED": [100,100],
-    "list_of_cars": ["VW_ID3_Pure", "Tesla_Model_3_LR", "FIAT_500e_Hatchback_2021", "Tesla_Model_S-X_LR", "Porsche_Taycan"],
+    "list_of_cars": ["VW_ID3_Pure_45kWh", "Tesla_Model3_LR", "2021_FIAT_500e_Hatchback", "Tesla_Model_SX_LR",
+        "Porsche_Taycan", "Hyundai_KONA_64kWh", "Hyundai_IONIQ5_LongRange", "Tesla_ModelY"],
+    "_list_of_cars": ["dummy100kW"],
     "_soc_begin": "0",
     "soc_begin": "gauss",
     "_soc_begin": "equally_distributed",
@@ -30,7 +32,7 @@
 
     "_comment": "Parameter Parkplatz",
     "number_of_stations": 4,
-    "max_power_per_station": 50,
+    "max_power_per_station": 300,
     "accessible_all_day": true,
     "opening_times": [8,22],
 

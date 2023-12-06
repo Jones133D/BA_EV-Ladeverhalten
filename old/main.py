@@ -13,7 +13,7 @@ import random
 # globals
 num_rejected_cars = 0  # Anzahl abgewiesener EVs, wenn alle Ladesäulen belegt
 
-with open("settings.json", "r") as f:
+with open("../settings.json", "r") as f:
     settings = json.load(f)
 
 

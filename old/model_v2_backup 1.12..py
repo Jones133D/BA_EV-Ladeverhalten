@@ -18,10 +18,9 @@ settings = []
 class Model:
     def __init__(self, name, capacity):
         self.name = name
-        self.capacity = float(capacity)
+        self.capacity = capacity
         # self.charging_curve = pd.read_csv(f'cars/{self.name}', sep=';', decimal=',', names=["soc", "power"])
         self.charging_curve = pd.read_parquet(f'cars/{self.name}.parquet')
-
 
 
 class Car:
@@ -31,60 +30,29 @@ class Car:
         self.total_parking_duration = total_parking_duration
         self.consumed_energy = 0
         self.current_parking_duration = 0
-        self.soc = float(soc_begin_generate(soc_begin))
+        self.soc = soc_begin_generate(soc_begin)
 
     def charge(self):
+        # print(self.model.charging_curve.info())
         idx = self.soc / 0.25
-        if idx < 0:
-            idx = 0
-        elif idx > 400:
-            idx = 400
-
-        power = float(self.model.charging_curve["power"].iloc[int(idx)])
-
-        if power >= int(settings["max_power_per_station"]):
-            power = int(settings["max_power_per_station"])
-
-        """    # wenn unterhalb der Ladekurve, ersten Index benutzen
-        # print(float(self.soc), ">=", float(self.model.charging_curve["soc"].iloc[self.model.charging_curve.index.stop - 1]))
-        # print("soc= ", self.soc)
-        if self.soc <= float(self.model.charging_curve["soc"].iloc[0]):
-            power = float(self.model.charging_curve["power"].iloc[0])
-           #  print("power unterhalb = ", power, type(power))
-
-        # wenn oberhalb der Ladekurve, letzten Index benutzen
-        # elif self.soc >= float(self.model.charging_curve["soc"].iloc[self.model.charging_curve.index.stop - 1]):
-          #   power = float(self.model.charging_curve["power"].iloc[self.model.charging_curve.index.stop - 1])
-        elif self.soc >= largest_soc[0]:
-            power = self.model.charging_curve.loc[self.model.charging_curve['soc'] == largest_soc[0], 'power'].iloc[0]
-           #  print("power oberhalb = ", power, type(power))
-
-        # wenn innerhalb der Ladekurve, diese am aktuelle soc benutzen
+        # wenn unterhalb der Ladekurve, ersten Index benutzen
+        if idx <= self.model.charging_curve.index.stop - 1:
+            power = float(self.model.charging_curve["power"].iloc[int(idx)])
         else:
-            # power = float(self.model.charging_curve["power"].loc[self.model.charging_curve.index.stop])
-            soc_rounded = round(float(self.soc) * 4) / 4
-            # print(soc_rounded)
-            # try:
-            # power = self.model.charging_curve.loc[self.model.charging_curve['soc'] == soc_rounded, 'power'].values
-            power_row = self.model.charging_curve.loc[np.isclose(self.model.charging_curve['soc'], soc_rounded), 'power']
-            power = power_row.iloc[0]
-            # except:
-              #   temp = float(self.model.charging_curve.loc[self.model.charging_curve['soc'] == soc_rounded, 'power'].values)
-
-           #  print("power innerhalb = ", power, type(power))
-            # print(power)
-            """
+            # wenn oberhalb der Ladekurve, letzten Index benutzen
+            power = float(self.model.charging_curve["power"].iloc[self.model.charging_curve.index.stop - 1])
 
         if self.soc >= 100:
             ready_loaded = True
-            power = float(0)
+            power = 0
         else:
             ready_loaded = False
 
         energy = power / 60  # Energie, die in der Minute dazukommt (in Kilowatt-Minuten)
-        self.soc += energy / self.model.capacity * 100  # Umrechnung in % soc der Gesamtkapazität
+        self.soc += energy / self.model.capacity * 100  # Umrechnung in % der Gesamtkapazität
         self.consumed_energy += energy  # dazugekommene Energie dazu addieren
         return power, ready_loaded
+
 
 
 def rand_new_car():
@@ -98,7 +66,6 @@ def rand_new_car():
         # random_choice = np.random.exponential(scale=1 / (settings["arriving_process_poisson_lambda"] / 60))
         random_choice = np.random.poisson((settings["arriving_process_poisson_lambda"] / 60))
         return random_choice
-
 
 def soc_begin_generate(soc_begin):
     if soc_begin == "equally_distributed":
@@ -155,16 +122,13 @@ def simulation(settings_selection):
         settings = json.load(f)
 
     # Initialize models
-    model1 = Model("VW_ID3_Pure_45kWh", 58)
-    model2 = Model("Tesla_Model3_LR", 82.5)
-    model3 = Model("2021_FIAT_500e_Hatchback", 42)
-    model4 = Model("dummy100kW", 100)
-    model5 = Model("Tesla_Model_SX_LR", 100)
+    model1 = Model("VW_ID3_Pure", 58)
+    model2 = Model("Tesla_Model_3_LR", 82.5)
+    model3 = Model("FIAT_500e_Hatchback_2021", 42)
+    model4 = Model("dummy_100kW", 100)
+    model5 = Model("Tesla_Model_S-X_LR", 100)
     model6 = Model("Porsche_Taycan", 93.4)
-    model7 = Model("Hyundai_KONA_64kWh", 64)
-    model8 = Model("Hyundai_IONIQ5_LongRange", 72.6)
-    model9 = Model("Tesla_ModelY", 82)
-    model_list_all = [model1, model2, model3, model4, model5, model6, model7, model8, model9]  # Liste aller möglicher Modelle
+    model_list_all = [model1, model2, model3, model4, model5, model6]  # Liste aller möglicher Modelle
     model_list = []  # Liste mit Modellen aus Settings.json
     for name in (settings["list_of_cars"]):
         for objekt in model_list_all:

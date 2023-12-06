@@ -12,7 +12,7 @@
 
     "_comment": "Kundenspezifische Parameter",
     "parking_duration_UNUSED": [100,100],
-    "list_of_cars": ["VW_ID3_Pure", "Tesla_Model_3_LR", "FIAT_500e_Hatchback_2021", "Tesla_Model_S-X_LR", "Porsche_Taycan"],
+    "list_of_cars": ["VW_ID3_Pure_45kWh", "Tesla_Model3_LR", "2021_FIAT_500e_Hatchback", "Tesla_Model_SX_LR", "Porsche_Taycan"],
     "soc_begin": 0,
     "soc_begin_normal_distributed_between": [40,75],
 
