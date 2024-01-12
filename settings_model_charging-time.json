@@ -11,15 +11,30 @@
     },
 
     "_comment": "Kundenspezifische Parameter",
-    "parking_duration_UNUSED": [100,100],
-    "list_of_cars": ["VW_ID3_Pure_45kWh", "Tesla_Model3_LR", "2021_FIAT_500e_Hatchback", "Tesla_Model_SX_LR", "Porsche_Taycan"],
-    "soc_begin": 0,
-    "soc_begin_normal_distributed_between": [40,75],
+    "parking_duration": [10,100],
+    "list_of_cars": ["VW_ID3_Pure_45kWh", "Tesla_Model3_LR", "2021_FIAT_500e_Hatchback", "Tesla_Model_SX_LR",
+        "Porsche_Taycan", "Hyundai_KONA_64kWh", "Hyundai_IONIQ5_LongRange", "Tesla_ModelY"],
+    "_list_of_cars": ["dummy100kW"],
+    "_soc_begin": "0",
+    "soc_begin": "gauss",
+    "_soc_begin": "equally_distributed",
+    "soc_begin_normal_distributed_between": [0,65],
+    "soc_gauss_von":  0,
+    "soc_gauss_bis": 65,
+    "soc_gauss_sigma": 10,
+
+    "_comment" : "Ankunftsprozess",
+    "_arriving_process": "random",
+    "arriving_process": "poisson",
+    "arriving_process_rand_factor": 1.35,
+    "arriving_process_poisson_lambda": 1.35,
+    "_arriving_process_rand_factor": 3,
+    "_arriving_process_poisson_lambda": 3,
 
 
     "_comment": "Parameter Parkplatz",
     "number_of_stations": 4,
-    "max_power_per_station": 50,
+    "max_power_per_station": 300,
     "accessible_all_day": true,
     "opening_times": [8,22],
 
@@ -27,5 +42,10 @@
     "a_out": 39.857766124920076,
     "kappa_out": 0.65117444343909,
     "loc_out": -20.724236876543387,
-    "lambda_out": 8.472003942187907
+    "lambda_out": 8.472003942187907,
+
+    "_a_out": 133.86664893175742,
+    "_kappa_out": 2.3019615971370655,
+    "_loc_out": -185.4098862393419,
+    "_lambda_out": 113.45499648894706
 }

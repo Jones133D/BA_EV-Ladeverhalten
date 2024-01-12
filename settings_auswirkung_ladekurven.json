@@ -12,6 +12,7 @@
 
     "_comment": "Kundenspezifische Parameter",
     "parking_duration": [0,100],
+    "_list_of_cars": ["Porsche_Taycan"],
     "list_of_cars": ["VW_ID3_Pure_45kWh", "Tesla_Model3_LR", "2021_FIAT_500e_Hatchback", "Tesla_Model_SX_LR",
         "Porsche_Taycan", "Hyundai_KONA_64kWh", "Hyundai_IONIQ5_LongRange", "Tesla_ModelY"],
     "_list_of_cars": ["dummy100kW"],

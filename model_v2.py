@@ -12,6 +12,8 @@ from scipy import stats
 num_rejected_cars = 0  # Anzahl abgewiesener EVs, wenn alle Ladesäulen belegt
 total_number_cars = 0  # Anzahl ankommender EVs pro Tag
 num_loaded_cars = 0  # Anzahl EVs mit Ladevorgang
+minute_counter = 0
+poisson_list = []
 settings = []
 
 
@@ -23,10 +25,9 @@ class Model:
         self.charging_curve = pd.read_parquet(f'cars/{self.name}.parquet')
 
 
-
 class Car:
     def __init__(self, model, total_parking_duration, soc_begin):
-        self.is_EV = True
+        # self.is_EV = True
         self.model = model
         self.total_parking_duration = total_parking_duration
         self.consumed_energy = 0
@@ -45,36 +46,6 @@ class Car:
         if power >= int(settings["max_power_per_station"]):
             power = int(settings["max_power_per_station"])
 
-        """    # wenn unterhalb der Ladekurve, ersten Index benutzen
-        # print(float(self.soc), ">=", float(self.model.charging_curve["soc"].iloc[self.model.charging_curve.index.stop - 1]))
-        # print("soc= ", self.soc)
-        if self.soc <= float(self.model.charging_curve["soc"].iloc[0]):
-            power = float(self.model.charging_curve["power"].iloc[0])
-           #  print("power unterhalb = ", power, type(power))
-
-        # wenn oberhalb der Ladekurve, letzten Index benutzen
-        # elif self.soc >= float(self.model.charging_curve["soc"].iloc[self.model.charging_curve.index.stop - 1]):
-          #   power = float(self.model.charging_curve["power"].iloc[self.model.charging_curve.index.stop - 1])
-        elif self.soc >= largest_soc[0]:
-            power = self.model.charging_curve.loc[self.model.charging_curve['soc'] == largest_soc[0], 'power'].iloc[0]
-           #  print("power oberhalb = ", power, type(power))
-
-        # wenn innerhalb der Ladekurve, diese am aktuelle soc benutzen
-        else:
-            # power = float(self.model.charging_curve["power"].loc[self.model.charging_curve.index.stop])
-            soc_rounded = round(float(self.soc) * 4) / 4
-            # print(soc_rounded)
-            # try:
-            # power = self.model.charging_curve.loc[self.model.charging_curve['soc'] == soc_rounded, 'power'].values
-            power_row = self.model.charging_curve.loc[np.isclose(self.model.charging_curve['soc'], soc_rounded), 'power']
-            power = power_row.iloc[0]
-            # except:
-              #   temp = float(self.model.charging_curve.loc[self.model.charging_curve['soc'] == soc_rounded, 'power'].values)
-
-           #  print("power innerhalb = ", power, type(power))
-            # print(power)
-            """
-
         if self.soc >= 100:
             ready_loaded = True
             power = float(0)
@@ -88,15 +59,21 @@ class Car:
 
 
 def rand_new_car():
+    global minute_counter
+    global poisson_list
+    if len(poisson_list) == 0:
+        rng = np.random.default_rng()
+        poisson_list = rng.poisson((settings["arriving_process_poisson_lambda"] / 60), size=1441)
+
     if settings["arriving_process"] == "random":
-        random_choice = random.choices([0, 1], weights=(200, settings["arriving_process_rand_factor"]), k=1)
+        random_choice = random.choices([0, 1], weights=(60, settings["arriving_process_rand_factor"]), k=1)
         if random_choice[0]:
             return 1
         else:
             return 0
     elif settings["arriving_process"] == "poisson":
-        # random_choice = np.random.exponential(scale=1 / (settings["arriving_process_poisson_lambda"] / 60))
-        random_choice = np.random.poisson((settings["arriving_process_poisson_lambda"] / 60))
+        # random_choice = np.random.poisson((settings["arriving_process_poisson_lambda"] / 60))
+        random_choice = poisson_list[minute_counter]
         return random_choice
 
 
@@ -106,7 +83,7 @@ def soc_begin_generate(soc_begin):
     elif soc_begin == "gauss":
         soc = np.random.normal(((settings["soc_gauss_bis"] - settings["soc_gauss_von"]) / 2),
                                settings["soc_gauss_sigma"], 1)
-        soc = np.clip(soc, 0, 75)
+        soc = np.clip(soc, settings["soc_gauss_von"], settings["soc_gauss_bis"])
     else:
         soc = 0
     print("soc_begin: ", soc_begin, ",", soc)
@@ -117,7 +94,7 @@ class Parking:
 
     def __init__(self, number_of_stations, stations_max_power):
         self.number_of_stations = number_of_stations
-        self.stations_max_power = stations_max_power
+        # self.stations_max_power = stations_max_power
         self.charging_cars = []
 
     def add_car(self, car):
@@ -149,6 +126,7 @@ def simulation(settings_selection):
     global num_rejected_cars
     global num_loaded_cars
     global settings
+    global minute_counter
     num_rejected_cars = 0
 
     with open(settings_selection, "r") as f:
@@ -190,9 +168,13 @@ def simulation(settings_selection):
         for _ in range(num_new_cars):
             car_model = random.choice(model_list)
             # car_model = model4  # zum test nur bestimmtes Model laden
-            # total_parking_duration = random.randint(*settings["parking_duration"])  # Parkdauer aus Settings
-            total_parking_duration = stats.exponweib.rvs(settings["a_out"], settings["kappa_out"], \
-                                                         loc=settings["loc_out"], scale=settings["lambda_out"], size=1)
+            #total_parking_duration = random.randint(*settings["parking_duration"])  # Parkdauer aus Settings
+            total_parking_duration = int(stats.exponweib.rvs(settings["a_out"], settings["kappa_out"], \
+                                                         loc=settings["loc_out"], scale=settings["lambda_out"], size=1))
+            while (total_parking_duration <= 0):
+                total_parking_duration = int(stats.exponweib.rvs(settings["a_out"], settings["kappa_out"], \
+                                                                 loc=settings["loc_out"], scale=settings["lambda_out"],
+                                                                 size=1))
             new_car = Car(car_model, total_parking_duration, settings["soc_begin"])
             parking.add_car(new_car)
 
@@ -210,9 +192,12 @@ def simulation(settings_selection):
             df_results.loc[row_index[0], 'number_cars_charging'] = parking.charging_cars.__len__()
 
             # df_results['power_summed'] = df_results['power_per_minute'].consum()
+        minute_counter += 1
+
     print("Anzahl geladener EVs: ", num_loaded_cars)
     print("Abgewiesene EVs: ", num_rejected_cars)
-    return df_results
+    return df_results, (num_rejected_cars + num_loaded_cars), num_rejected_cars
+    #return df_results
 
 
 def plot(df):
