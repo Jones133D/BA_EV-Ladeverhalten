@@ -12,7 +12,6 @@
 
     "_comment": "Kundenspezifische Parameter",
     "parking_duration": [0,100],
-    "_list_of_cars": ["Hyundai_KONA_64kWh"],
     "list_of_cars": ["VW_ID3_Pure_45kWh", "Tesla_Model3_LR", "2021_FIAT_500e_Hatchback", "Tesla_Model_SX_LR",
         "Porsche_Taycan", "Hyundai_KONA_64kWh", "Hyundai_IONIQ5_LongRange", "Tesla_ModelY"],
     "_list_of_cars": ["dummy100kW"],
@@ -36,8 +35,9 @@
     "_comment": "Parameter Parkplatz",
     "number_of_stations": 4,
     "max_power_per_station": 300,
-    "accessible_all_day": true,
-    "opening_times": [8,22],
+    "accessible_all_day": 0,
+    "opening_time_in_min": 480,
+    "closing_time_in_min": 1320,
 
     "_comment": "Parameter Charging-Time Weibull",
     "a_out": 39.857766124920076,
