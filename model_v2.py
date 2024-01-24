@@ -196,8 +196,8 @@ def simulation(settings_selection):
 
     print("Anzahl geladener EVs: ", num_loaded_cars)
     print("Abgewiesene EVs: ", num_rejected_cars)
-    return df_results, (num_rejected_cars + num_loaded_cars), num_rejected_cars
-    #return df_results
+    #return df_results, (num_rejected_cars + num_loaded_cars), num_rejected_cars
+    return df_results
 
 
 def plot(df):
