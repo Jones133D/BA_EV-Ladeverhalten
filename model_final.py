@@ -19,7 +19,6 @@ class Model:
     def __init__(self, name, capacity):
         self.name = name
         self.capacity = float(capacity)
-        # self.charging_curve = pd.read_csv(f'cars/{self.name}', sep=';', decimal=',', names=["soc", "power"])
         self.charging_curve = pd.read_parquet(f'cars/{self.name}.parquet')
 
 
@@ -84,7 +83,7 @@ def soc_begin_generate(soc_begin):
         soc = np.clip(soc, settings["soc_gauss_von"], settings["soc_gauss_bis"])
     else:
         soc = 0
-    print("soc_begin: ", soc_begin, ",", soc)
+    # print("soc_begin: ", soc_begin, ",", soc)
     return soc
 
 
@@ -92,7 +91,7 @@ class Parking:
 
     def __init__(self, number_of_stations, stations_max_power):
         self.number_of_stations = number_of_stations
-        # self.stations_max_power = stations_max_power
+        self.stations_max_power = stations_max_power # wird in charge benötigt
         self.charging_cars = []
 
     def add_car(self, car):
@@ -104,7 +103,7 @@ class Parking:
             self.charging_cars.append(car)
         else:
             num_rejected_cars += 1
-            print("Alle Ladesäulen belegt. Abgewiesene EVs: ", num_rejected_cars)
+            # print("Alle Ladesäulen belegt. Abgewiesene EVs: ", num_rejected_cars)
 
     def remove_ready_cars(self):
         global num_loaded_cars
@@ -207,7 +206,7 @@ def simulation(settings_selection):
 
 
 def plot(df):
-    # Create figure with secondary y-axis
+
     fig1, ax1 = plt.subplots()
     fig1.set_size_inches(18.5, 10.5)
     color = 'tab:blue'
