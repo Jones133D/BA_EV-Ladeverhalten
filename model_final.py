@@ -237,12 +237,14 @@ def plot(df):
     fig1.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.title(label='Lastverlauf')
     plt.show()
+    plt.figure(figsize=(9, 6))
 
     # Histogramm Lastverteilung
     plt.hist(np.asarray(df['power_per_minute']), bins=40)
     # plt.hist(np.asarray(df['number_cars_charging']), bins=[0, 1, 2, 3, 4])
     plt.ylabel('Minuten')
     plt.xlabel('Load in kW')
+    #plt.ylim(top=40)
     plt.title(label='Histogramm Load')
     plt.show()
 
